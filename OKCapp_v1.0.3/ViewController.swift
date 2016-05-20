@@ -67,7 +67,7 @@ class ViewController: UIViewController {
 	}
 	
 	@IBAction func runButtonSelected(sender: AnyObject) {
-		// commit test 2
+		// commit test 3
 		let limit = Int(self.visitLimitTextField.text!)!
 		var cycles:Int!
 		var finalCycleLimit:Int!
