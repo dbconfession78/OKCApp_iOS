@@ -67,51 +67,51 @@ class ViewController: UIViewController {
 	}
 	
 	@IBAction func runButtonSelected(sender: AnyObject) {
-			let limit = Int(self.visitLimitTextField.text!)!
-			var cycles:Int!
-			var finalCycleLimit:Int!
-			
-			let thread1 = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0)
-			dispatch_async(thread1, {
-				if !self.isRunning {
-					self.runButton.setTitle("Stop Run", forState: UIControlState.Normal)
-				} else {
-					self.runButton.setTitle("Run", forState: UIControlState.Normal)
-				}
-			})
-			
-			NSThread.sleepForTimeInterval(0.5)
-			let thread2 = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0)
-			dispatch_async(thread2, {
-				dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
-					self.beginBackgroundUpdateTask()
-					let maxLimitsPerCycle = 100
-					if limit <= maxLimitsPerCycle {
-						self.isRunning = true
-						self.run(limit)
-					} else {
-						cycles = (limit / maxLimitsPerCycle) + 1
-						finalCycleLimit = limit % maxLimitsPerCycle
-						
-						for i in 1..<cycles {
-							self.isRunning = true
-							self.run(maxLimitsPerCycle)
-						}
-						
-						if finalCycleLimit > 0 {
-							self.isRunning = true
-							self.run(finalCycleLimit)
-						}
-					}
-					dispatch_async(dispatch_get_main_queue(), {
-						self.runButton.setTitle("Run", forState: UIControlState.Normal)
-					})
-					
-					print("Visited \(self.totalProfilesVisited) profile(s)")
-					self.endBackgroundUpdateTask()
-			})
+		// commit test 1
+		let limit = Int(self.visitLimitTextField.text!)!
+		var cycles:Int!
+		var finalCycleLimit:Int!
+		
+		let thread1 = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0)
+		dispatch_async(thread1, {
+			if !self.isRunning {
+				self.runButton.setTitle("Stop Run", forState: UIControlState.Normal)
+			} else {
+				self.runButton.setTitle("Run", forState: UIControlState.Normal)
+			}
 		})
 		
+		NSThread.sleepForTimeInterval(0.5)
+		let thread2 = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0)
+		dispatch_async(thread2, {
+			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
+				self.beginBackgroundUpdateTask()
+				let maxLimitsPerCycle = 100
+				if limit <= maxLimitsPerCycle {
+					self.isRunning = true
+					self.run(limit)
+				} else {
+					cycles = (limit / maxLimitsPerCycle) + 1
+					finalCycleLimit = limit % maxLimitsPerCycle
+					
+					for i in 1..<cycles {
+						self.isRunning = true
+						self.run(maxLimitsPerCycle)
+					}
+					
+					if finalCycleLimit > 0 {
+						self.isRunning = true
+						self.run(finalCycleLimit)
+					}
+				}
+				dispatch_async(dispatch_get_main_queue(), {
+					self.runButton.setTitle("Run", forState: UIControlState.Normal)
+				})
+				
+				print("Visited \(self.totalProfilesVisited) profile(s)")
+				self.endBackgroundUpdateTask()
+			})
+		})
 	}
 	
 	override func viewDidLoad() {
