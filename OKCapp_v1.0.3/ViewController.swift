@@ -83,29 +83,33 @@ class ViewController: UIViewController {
 		NSThread.sleepForTimeInterval(0.5)
 		let thread2 = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0)
 		dispatch_async(thread2, {
-			let maxLimitsPerCycle = 100
-			if limit <= maxLimitsPerCycle {
-				self.isRunning = true
-				self.run(limit)
-			} else {
-				cycles = (limit / maxLimitsPerCycle) + 1
-				finalCycleLimit = limit % maxLimitsPerCycle
-				
-				for i in 1..<cycles {
+			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
+				self.beginBackgroundUpdateTask()
+				let maxLimitsPerCycle = 100
+				if limit <= maxLimitsPerCycle {
 					self.isRunning = true
-					self.run(maxLimitsPerCycle)
+					self.run(limit)
+				} else {
+					cycles = (limit / maxLimitsPerCycle) + 1
+					finalCycleLimit = limit % maxLimitsPerCycle
+					
+					for i in 1..<cycles {
+						self.isRunning = true
+						self.run(maxLimitsPerCycle)
+					}
+					
+					if finalCycleLimit > 0 {
+						self.isRunning = true
+						self.run(finalCycleLimit)
+					}
 				}
+				dispatch_async(dispatch_get_main_queue(), {
+					self.runButton.setTitle("Run", forState: UIControlState.Normal)
+				})
 				
-				if finalCycleLimit > 0 {
-					self.isRunning = true
-					self.run(finalCycleLimit)
-				}
-			}
-			dispatch_async(dispatch_get_main_queue(), {
-				self.runButton.setTitle("Run", forState: UIControlState.Normal)
+				print("Visited \(self.totalProfilesVisited) profile(s)")
+				self.endBackgroundUpdateTask()
 			})
-			
-			print("Visited \(self.totalProfilesVisited) profile(s)")
 		})
 	}
 	
@@ -257,49 +261,44 @@ class ViewController: UIViewController {
 	}
 	
 	func visitProfile(profile: NSString) -> Bool {
-		var didVisitProfile: Bool?
-
-			// =========================================
-			let url = "https://www.okcupid.com/profile/\(profile)"
-			let encodedURL = url.stringByAddingPercentEncodingWithAllowedCharacters(
-				NSCharacterSet.URLFragmentAllowedCharacterSet()),
-			URL = NSURL(string: encodedURL!)
+		
+		// =========================================
+		let url = "https://www.okcupid.com/profile/\(profile)"
+		let encodedURL = url.stringByAddingPercentEncodingWithAllowedCharacters(
+			NSCharacterSet.URLFragmentAllowedCharacterSet()),
+		URL = NSURL(string: encodedURL!)
+		
+		// ==========================================
+		
+		//		let URL = NSURL(string: "https://www.okcupid.com/profile/\(profile)")
+		var didVisitProfile = false
+		if URL != nil {
+			let request = Request(URL: URL!, method: "GET", params: "")
 			
-			// ==========================================
-			
-			//		let URL = NSURL(string: "https://www.okcupid.com/profile/\(profile)")
-			
-			if URL != nil {
-				let request = Request(URL: URL!, method: "GET", params: "")
-				
-				request.isRequesting = true
-				queue.addOperation(request)
-				request.threadPriority = 0
-				request.completionBlock = {() -> () in
-					request.execute()
-				}
-				while request.isRequesting {
-					NSThread.sleepForTimeInterval(1.0)
-				}
-				
-				NSThread.sleepForTimeInterval(1)
-				if request.contentsOfURL.containsString("<title>\(profile) /") {
-					//					profilesVisited += 1
-					didVisitProfile = true
-				} else {
-					didVisitProfile = false
-				}
-				self.isVisiting = false
+			request.isRequesting = true
+			queue.addOperation(request)
+			request.threadPriority = 0
+			request.completionBlock = {() -> () in
+				request.execute()
 			}
+			while request.isRequesting {
+				NSThread.sleepForTimeInterval(1.0)
+			}
+			
+			NSThread.sleepForTimeInterval(1)
+			if request.contentsOfURL.containsString("<title>\(profile) /") {
+//					profilesVisited += 1
+				didVisitProfile = true
+			} else {
+				didVisitProfile = true
+			}
+			isVisiting = false
+		}
 		
-		
-		return didVisitProfile!
+		return didVisitProfile
 	}
 	
 	func run(limit: Int) {
-		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
-			self.beginBackgroundUpdateTask()
-
 		var previouslyVisitedProfileCount = Int()
 		var profilesVisited = 0
 		let visitInterval: NSTimeInterval = 6
@@ -358,13 +357,10 @@ class ViewController: UIViewController {
 					previouslyVisitedProfileCount += 1
 				} else {
 					
-//					dispatch_async(thread, {
-						dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
-							self.beginBackgroundUpdateTask()
-							didVisitProfile = self.visitProfile(profile)
-							self.endBackgroundUpdateTask()
-						})
-//					})
+					dispatch_async(thread, {
+						didVisitProfile = self.visitProfile(profile)
+
+					})
 					secondsPerVisit = 0.0
 					while self.isVisiting {
 						NSThread.sleepForTimeInterval(0.5)
@@ -403,16 +399,14 @@ class ViewController: UIViewController {
 			self.isRunning = false
 		})
 		
-		while self.isRunning {
+		while isRunning {
 			NSThread.sleepForTimeInterval(0.0)
-			if secondsPerVisit > 5.0 && self.isRunning ==  true {
+			if secondsPerVisit > 5.0 && isRunning ==  true {
 				print("\ntime to complete visit: \(secondsPerVisit)")
-				self.isRunning = false
+				isRunning = false
 				break
 			}
 		}
-		self.endBackgroundUpdateTask()
-		})
 	}
 	
 	func writeTextToFile(content: String, fileName: String) {
