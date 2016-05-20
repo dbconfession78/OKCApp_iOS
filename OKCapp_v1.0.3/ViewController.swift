@@ -83,8 +83,8 @@ class ViewController: UIViewController {
 			NSThread.sleepForTimeInterval(0.5)
 			let thread2 = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0)
 			dispatch_async(thread2, {
-//				dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
-//					self.beginBackgroundUpdateTask()
+				dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
+					self.beginBackgroundUpdateTask()
 					let maxLimitsPerCycle = 100
 					if limit <= maxLimitsPerCycle {
 						self.isRunning = true
@@ -108,8 +108,8 @@ class ViewController: UIViewController {
 					})
 					
 					print("Visited \(self.totalProfilesVisited) profile(s)")
-//					self.endBackgroundUpdateTask()
-//			})
+					self.endBackgroundUpdateTask()
+			})
 		})
 		
 	}
